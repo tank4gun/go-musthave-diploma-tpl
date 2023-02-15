@@ -11,9 +11,9 @@ var DBURI string
 var AccrualSysAddr string
 
 func Init() {
-	flag.StringVar(&ServerAddr, "a", "localhost:8087", "GopherMart server address")
-	flag.StringVar(&DBURI, "d", "postgresql://postgres2:GophermartPass@localhost:6432/gophermart?sslmode=disable", "GopherMart database address")
-	flag.StringVar(&AccrualSysAddr, "r", "http://localhost:8080", "Accrual system address")
+	flag.StringVar(&ServerAddr, "a", "", "GopherMart server address")
+	flag.StringVar(&DBURI, "d", "", "GopherMart database address")
+	flag.StringVar(&AccrualSysAddr, "r", "", "Accrual system address")
 	flag.Parse()
 
 	ServerAddrEnv := os.Getenv("RUN_ADDRESS")
