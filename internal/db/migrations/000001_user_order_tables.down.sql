@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS withdrawal;
+DROP TABLE IF EXISTS "order";
+DROP TABLE IF EXISTS "user";
