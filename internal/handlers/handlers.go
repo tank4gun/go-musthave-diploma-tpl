@@ -107,7 +107,6 @@ func CheckAuth(next http.Handler) http.Handler {
 		}
 		fmt.Println("Got not equal sign for UserID")
 		http.Error(w, "Could not auth user", http.StatusUnauthorized)
-		return
 	})
 }
 
@@ -120,6 +119,7 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 		var ordersToSave = make([]storage.Order, 0)
 		for _, order := range orders {
 			response, err := strg.client.Get(varprs.AccrualSysAddr + "/api/orders/" + order.Number)
+			defer response.Body.Close()
 			if err != nil {
 				fmt.Printf("Got error %s", err.Error())
 				continue
@@ -233,7 +233,7 @@ func (strg *HandlerWithStorage) AddOrder(w http.ResponseWriter, r *http.Request)
 	}
 	userID := r.Context().Value(UserID).(string)
 	errCode = strg.storage.AddOrderForUser(string(data), userID)
-	if errCode != http.StatusOK || errCode != http.StatusAccepted {
+	if errCode != http.StatusOK && errCode != http.StatusAccepted {
 		fmt.Printf("Could not add order into db, %d", errCode)
 		http.Error(w, "Could not add order into db", errCode)
 		return

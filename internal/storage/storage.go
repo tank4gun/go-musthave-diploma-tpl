@@ -19,14 +19,14 @@ type UserAuthData struct {
 type Order struct {
 	Number     string    `json:"number"`
 	Status     string    `json:"status"`
-	Accrual    uint      `json:"accrual,omitempty"`
+	Accrual    float64   `json:"accrual,omitempty"`
 	UploadedAt time.Time `json:"uploaded_at"`
 }
 
-type OrderFromDb struct {
+type OrderFromDB struct {
 	Number     string
 	Status     string
-	Accrual    sql.NullInt64
+	Accrual    sql.NullFloat64
 	UploadedAt time.Time
 }
 
@@ -87,7 +87,7 @@ func (strg *DBStorage) Register(registerData UserAuthData) (string, int) {
 		fmt.Printf("Error %s", err.Error())
 		return "", http.StatusInternalServerError
 	} else {
-		fmt.Printf("Got userID %s", userID)
+		fmt.Printf("Got userID %v", userID)
 		if userID.Valid {
 			userIDValue := userID.String
 			log.Printf("Got new userID %s", userIDValue)
@@ -126,7 +126,7 @@ func (strg *DBStorage) AddOrderForUser(externalOrderID string, userID string) in
 			return http.StatusConflict
 		}
 	}
-	fmt.Printf("Order with id %d not found in DB, should add it", externalOrderID)
+	fmt.Printf("Order with id %v not found in DB, should add it", externalOrderID)
 	row = strg.db.QueryRow(
 		"INSERT INTO \"order\" (user_id, status, external_id) VALUES ($1, $2, $3) RETURNING id",
 		userID, "NEW", externalOrderID,
@@ -150,15 +150,15 @@ func (strg *DBStorage) GetOrdersByUser(userID string) ([]Order, int) {
 	defer rows.Close()
 	orders := make([]Order, 0)
 	for rows.Next() {
-		var orderFromDB OrderFromDb
-		err := rows.Scan(&orderFromDB.Number, &orderFromDB.Status, &orderFromDB.Accrual, &orderFromDB.UploadedAt)
+		var orderFromDBVal OrderFromDB
+		err := rows.Scan(&orderFromDBVal.Number, &orderFromDBVal.Status, &orderFromDBVal.Accrual, &orderFromDBVal.UploadedAt)
 		if err != nil {
 			fmt.Printf("Got error: %s", err.Error())
 			return nil, http.StatusInternalServerError
 		}
-		order := Order{Number: orderFromDB.Number, Status: orderFromDB.Status, UploadedAt: orderFromDB.UploadedAt}
-		if orderFromDB.Accrual.Valid {
-			order.Accrual = uint(orderFromDB.Accrual.Int64)
+		order := Order{Number: orderFromDBVal.Number, Status: orderFromDBVal.Status, UploadedAt: orderFromDBVal.UploadedAt}
+		if orderFromDBVal.Accrual.Valid {
+			order.Accrual = orderFromDBVal.Accrual.Float64
 		}
 		orders = append(orders, order)
 	}
@@ -238,11 +238,15 @@ func (strg *DBStorage) GetWithdrawalsForUser(userID string) ([]Withdrawal, int) 
 	withdrawals := make([]Withdrawal, 0)
 	for rows.Next() {
 		var withdrawal Withdrawal
+		//var amountFromDB sql.NullFloat64
 		err = rows.Scan(&withdrawal.Order, &withdrawal.Sum, &withdrawal.ProcessedAt)
 		if err != nil {
 			fmt.Printf("Got error %s", err.Error())
 			return make([]Withdrawal, 0), http.StatusInternalServerError
 		}
+		//if amountFromDB.Valid {
+		//	withdrawal.Sum = amountFromDB.Float64
+		//}
 		withdrawals = append(withdrawals, withdrawal)
 	}
 	if err := rows.Err(); err != nil {
@@ -264,11 +268,16 @@ func (strg *DBStorage) GetOrdersInProgress() ([]Order, int) {
 	defer rows.Close()
 	orders := make([]Order, 0)
 	for rows.Next() {
-		var order Order
-		err = rows.Scan(&order.Number, &order.Status, &order.Accrual)
+		var orderFromDBVal OrderFromDB
+		//var amountFromDB sql.NullFloat64
+		err = rows.Scan(&orderFromDBVal.Number, &orderFromDBVal.Status, &orderFromDBVal.Accrual)
 		if err != nil {
 			fmt.Printf("Got error %s", err.Error())
 			return make([]Order, 0), http.StatusInternalServerError
+		}
+		order := Order{Number: orderFromDBVal.Number, Status: orderFromDBVal.Status}
+		if orderFromDBVal.Accrual.Valid {
+			order.Accrual = orderFromDBVal.Accrual.Float64
 		}
 		orders = append(orders, order)
 	}
