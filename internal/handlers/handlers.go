@@ -170,7 +170,8 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 			fmt.Printf("Got bad status code %v", response.StatusCode)
 		}
 		time.Sleep(1 * time.Second)
-	//}
+		//}
+	}
 }
 
 func (strg *HandlerWithStorage) Register(w http.ResponseWriter, r *http.Request) {
