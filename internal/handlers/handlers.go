@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 var UserCookie = "UserCookie"
@@ -141,6 +142,7 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 			}
 		}
 		strg.storage.UpdateOrders(ordersToSave)
+		time.Sleep(1 * time.Second)
 	}
 }
 
