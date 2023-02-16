@@ -231,12 +231,12 @@ func (strg *HandlerWithStorage) AddOrder(w http.ResponseWriter, r *http.Request)
 	}
 	userID := r.Context().Value(UserID).(string)
 	errCode = strg.storage.AddOrderForUser(string(data), userID)
-	if errCode != http.StatusOK {
-		fmt.Println("Could not add order into db")
+	if errCode != http.StatusOK || errCode != http.StatusAccepted {
+		fmt.Printf("Could not add order into db, %d", errCode)
 		http.Error(w, "Could not add order into db", errCode)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(errCode)
 	w.Write(make([]byte, 0))
 }
 
@@ -257,6 +257,7 @@ func (strg *HandlerWithStorage) GetOrders(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Got error while marshalling", http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(ordersMarshalled)
 }
@@ -273,6 +274,7 @@ func (strg *HandlerWithStorage) GetBalance(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Got error while marshalling", errCode)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(userBalanceMarshalled)
 }
@@ -327,6 +329,7 @@ func (strg *HandlerWithStorage) GetWithdrawals(w http.ResponseWriter, r *http.Re
 		http.Error(w, "Got error", http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(withdrawalsMarshalled)
 }

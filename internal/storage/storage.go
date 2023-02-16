@@ -138,7 +138,7 @@ func (strg *DBStorage) AddOrderForUser(externalOrderID string, userID string) in
 		return http.StatusInternalServerError
 	}
 	fmt.Printf("New order with id %s added", orderID)
-	return http.StatusOK
+	return http.StatusAccepted
 }
 
 func (strg *DBStorage) GetOrdersByUser(userID string) ([]Order, int) {
