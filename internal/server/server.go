@@ -13,7 +13,7 @@ func CreateServer(storageForHandler storage.Storage) *http.Server {
 
 	handlerWithStorage := handlers.GetHandlerWithStorage(storageForHandler)
 	router.Use(handlers.CheckAuth)
-	go handlerWithStorage.GetStatusesDaemon()
+	//go handlerWithStorage.GetStatusesDaemon()
 	router.Post("/api/user/register", handlerWithStorage.Register)
 	router.Post("/api/user/login", handlerWithStorage.Login)
 	router.Post("/api/user/orders", handlerWithStorage.AddOrder)
