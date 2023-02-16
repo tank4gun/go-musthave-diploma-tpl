@@ -168,6 +168,9 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 			strg.storage.UpdateOrders([]storage.Order{newOrder})
 		} else {
 			fmt.Printf("Got bad status code %v", response.StatusCode)
+			go func() {
+				strg.ordersToProcess <- order
+			}()
 		}
 		time.Sleep(1 * time.Second)
 		//}
