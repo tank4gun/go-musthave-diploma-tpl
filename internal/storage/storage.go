@@ -285,6 +285,7 @@ func (strg *DBStorage) GetOrdersInProgress() ([]Order, int) {
 		fmt.Printf("Got error: %s", err.Error())
 		return nil, http.StatusInternalServerError
 	}
+	fmt.Printf("Got orders %v", orders)
 	return orders, http.StatusOK
 }
 

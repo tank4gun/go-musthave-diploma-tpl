@@ -15,17 +15,20 @@ import (
 	"time"
 )
 
+type userCtxName string
+
 var UserCookie = "UserCookie"
-var UserID = "UserID"
+var UserID = userCtxName("UserID")
 var CookieKey = []byte("SecretKeyToUserID")
 
 type HandlerWithStorage struct {
-	storage storage.Storage
-	client  http.Client
+	storage         storage.Storage
+	client          http.Client
+	ordersToProcess chan string
 }
 
 func GetHandlerWithStorage(storage storage.Storage) HandlerWithStorage {
-	return HandlerWithStorage{storage: storage, client: http.Client{}}
+	return HandlerWithStorage{storage: storage, client: http.Client{}, ordersToProcess: make(chan string, 10)}
 }
 
 func ValidateOrder(order string) (uint, int) {
@@ -111,39 +114,63 @@ func CheckAuth(next http.Handler) http.Handler {
 }
 
 func (strg *HandlerWithStorage) GetStatusesDaemon() {
-	for {
-		orders, _ := strg.storage.GetOrdersInProgress()
-		//if errCode != http.StatusOK {
-		//
+	for order := range strg.ordersToProcess {
+		//orders, _ := strg.storage.GetOrdersInProgress()
+		////if errCode != http.StatusOK {
+		////
+		////}
+		//var ordersToSave = make([]storage.Order, 0)
+		//for _, order := range orders {
+		//	response, err := strg.client.Get(varprs.AccrualSysAddr + "/api/orders/" + order.Number)
+		//	if err != nil {
+		//		fmt.Printf("Got error %s", err.Error())
+		//		continue
+		//	}
+		//	if response.StatusCode == http.StatusOK {
+		//		var newOrder storage.Order
+		//		defer response.Body.Close()
+		//		data, err := io.ReadAll(response.Body)
+		//		if err != nil {
+		//			fmt.Printf("Got error %s", err.Error())
+		//			continue
+		//		}
+		//		err = json.Unmarshal(data, &newOrder)
+		//		if err != nil {
+		//			fmt.Printf("Got error %s", err.Error())
+		//			continue
+		//		}
+		//		ordersToSave = append(ordersToSave, newOrder)
+		//	} else {
+		//		fmt.Printf("Got bad status code %v", response.StatusCode)
+		//	}
 		//}
-		var ordersToSave = make([]storage.Order, 0)
-		for _, order := range orders {
-			response, err := strg.client.Get(varprs.AccrualSysAddr + "/api/orders/" + order.Number)
+		//strg.storage.UpdateOrders(ordersToSave)
+		//time.Sleep(1 * time.Second)
+
+		response, err := strg.client.Get(varprs.AccrualSysAddr + "/api/orders/" + order)
+		if err != nil {
+			fmt.Printf("Got error %s", err.Error())
+			continue
+		}
+		if response.StatusCode == http.StatusOK {
+			var newOrder storage.Order
 			defer response.Body.Close()
+			data, err := io.ReadAll(response.Body)
 			if err != nil {
 				fmt.Printf("Got error %s", err.Error())
 				continue
 			}
-			if response.StatusCode == http.StatusOK {
-				var newOrder storage.Order
-				data, err := io.ReadAll(response.Body)
-				if err != nil {
-					fmt.Printf("Got error %s", err.Error())
-					continue
-				}
-				err = json.Unmarshal(data, &newOrder)
-				if err != nil {
-					fmt.Printf("Got error %s", err.Error())
-					continue
-				}
-				ordersToSave = append(ordersToSave, newOrder)
-			} else {
-				fmt.Printf("Got bad status code %v", response.StatusCode)
+			err = json.Unmarshal(data, &newOrder)
+			if err != nil {
+				fmt.Printf("Got error %s", err.Error())
+				continue
 			}
+			strg.storage.UpdateOrders([]storage.Order{newOrder})
+		} else {
+			fmt.Printf("Got bad status code %v", response.StatusCode)
 		}
-		strg.storage.UpdateOrders(ordersToSave)
 		time.Sleep(1 * time.Second)
-	}
+	//}
 }
 
 func (strg *HandlerWithStorage) Register(w http.ResponseWriter, r *http.Request) {
@@ -237,6 +264,11 @@ func (strg *HandlerWithStorage) AddOrder(w http.ResponseWriter, r *http.Request)
 		fmt.Printf("Could not add order into db, %d", errCode)
 		http.Error(w, "Could not add order into db", errCode)
 		return
+	}
+	if errCode == http.StatusAccepted {
+		go func() {
+			strg.ordersToProcess <- string(data)
+		}()
 	}
 	w.WriteHeader(errCode)
 	w.Write(make([]byte, 0))
