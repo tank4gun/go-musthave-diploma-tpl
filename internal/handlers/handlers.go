@@ -276,16 +276,20 @@ func (strg *HandlerWithStorage) AddOrder(w http.ResponseWriter, r *http.Request)
 }
 
 func (strg *HandlerWithStorage) GetOrders(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Got GetOrders request")
 	userID := r.Context().Value(UserID).(string)
 	orders, errCode := strg.storage.GetOrdersByUser(userID)
 	if errCode != http.StatusOK {
+		fmt.Printf("Got error %v", errCode)
 		http.Error(w, "Got bad status code", errCode)
 		return
 	}
 	if len(orders) == 0 {
+		fmt.Println("Got empty orders")
 		http.Error(w, "Got no orders for this user", http.StatusNoContent)
 		return
 	}
+	fmt.Printf("Got orders %v", orders)
 	ordersMarshalled, err := json.Marshal(orders)
 	if err != nil {
 		fmt.Printf("Got error: %s", err.Error())
