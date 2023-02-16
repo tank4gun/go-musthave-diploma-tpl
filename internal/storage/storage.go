@@ -67,7 +67,7 @@ type DBStorage struct {
 }
 
 func (strg *DBStorage) Register(registerData UserAuthData) (string, int) {
-	row := strg.db.QueryRow("SELECT id FROM \"user\" WHERE login = $1", registerData.Login)
+	row := strg.db.QueryRow("SELECT id FROM \"user\" WHERE \"login\" = $1", registerData.Login)
 	var userID sql.NullString
 	err := row.Scan(&userID)
 	if err != nil && userID.Valid {
@@ -82,7 +82,7 @@ func (strg *DBStorage) Register(registerData UserAuthData) (string, int) {
 	h.Write([]byte(registerData.Password))
 	passwordHash := hex.EncodeToString(h.Sum(nil))
 	fmt.Printf("Got password hash %s", passwordHash)
-	row = strg.db.QueryRow("INSERT INTO user (login, password_hash) VALUES ($1, $2) RETURNING id", registerData.Login, passwordHash)
+	row = strg.db.QueryRow("INSERT INTO \"user\" (\"login\", password_hash) VALUES ($1, $2) RETURNING id", registerData.Login, passwordHash)
 	if err := row.Scan(&userID); err != nil {
 		fmt.Printf("Error %s", err.Error())
 		return "", http.StatusInternalServerError
