@@ -12,11 +12,13 @@ func RunMigrations(dbURI string) error {
 	if dbURI == "" {
 		return fmt.Errorf("got empty dbURI")
 	}
-	m, err := migrate.New("file://db/migrations", dbURI)
+	m, err := migrate.New("file://internal/db/migrations", dbURI)
 	if err != nil {
+		fmt.Printf("Got err %s", err.Error())
 		return err
 	}
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		fmt.Printf("Got err %s", err.Error())
 		return err
 	}
 	return nil
