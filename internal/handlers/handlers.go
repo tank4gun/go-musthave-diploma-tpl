@@ -92,7 +92,6 @@ func CheckAuth(next http.Handler) http.Handler {
 			http.Error(w, "Could not auth user", http.StatusUnauthorized)
 			return
 		}
-		//data := cookie.Value
 		data, err := hex.DecodeString(cookie.Value)
 		fmt.Printf("Got Cookie: %s", cookie.Value)
 		if err != nil {
@@ -134,6 +133,7 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 				continue
 			}
 			fmt.Printf("Got newOrder %v", newOrder)
+			newOrder.Order = orderNumber
 			strg.storage.UpdateOrder(newOrder)
 			if newOrder.Status != "INVALID" && newOrder.Status != "PROCESSED" {
 				go func() {
@@ -142,12 +142,15 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 			}
 			response.Body.Close()
 		} else {
+			if response.StatusCode == http.StatusTooManyRequests {
+				fmt.Printf("Got 429 StatusTooManyRequests, need to sleep a bit")
+				time.Sleep(1 * time.Second)
+			}
 			fmt.Printf("Got bad status code %v for order %s", response.StatusCode, orderNumber)
 			go func() {
 				strg.ordersToProcess <- orderNumber
 			}()
 		}
-		time.Sleep(1 * time.Second)
 	}
 	close(strg.ordersToProcess)
 }
