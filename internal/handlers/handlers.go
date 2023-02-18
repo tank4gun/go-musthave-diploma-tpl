@@ -12,7 +12,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 type userCtxName string
@@ -114,47 +113,15 @@ func CheckAuth(next http.Handler) http.Handler {
 }
 
 func (strg *HandlerWithStorage) GetStatusesDaemon() {
-	for order := range strg.ordersToProcess {
-		fmt.Printf("Got order %s to process", order)
-		//orders, _ := strg.storage.GetOrdersInProgress()
-		////if errCode != http.StatusOK {
-		////
-		////}
-		//var ordersToSave = make([]storage.Order, 0)
-		//for _, order := range orders {
-		//	response, err := strg.client.Get(varprs.AccrualSysAddr + "/api/orders/" + order.Number)
-		//	if err != nil {
-		//		fmt.Printf("Got error %s", err.Error())
-		//		continue
-		//	}
-		//	if response.StatusCode == http.StatusOK {
-		//		var newOrder storage.Order
-		//		defer response.Body.Close()
-		//		data, err := io.ReadAll(response.Body)
-		//		if err != nil {
-		//			fmt.Printf("Got error %s", err.Error())
-		//			continue
-		//		}
-		//		err = json.Unmarshal(data, &newOrder)
-		//		if err != nil {
-		//			fmt.Printf("Got error %s", err.Error())
-		//			continue
-		//		}
-		//		ordersToSave = append(ordersToSave, newOrder)
-		//	} else {
-		//		fmt.Printf("Got bad status code %v", response.StatusCode)
-		//	}
-		//}
-		//strg.storage.UpdateOrders(ordersToSave)
-		//time.Sleep(1 * time.Second)
-
-		response, err := strg.client.Get(varprs.AccrualSysAddr + "/api/orders/" + order)
+	for orderNumber := range strg.ordersToProcess {
+		fmt.Printf("Got order %s to process", orderNumber)
+		response, err := strg.client.Get(varprs.AccrualSysAddr + "/api/orders/" + orderNumber)
 		if err != nil {
 			fmt.Printf("Got error %s", err.Error())
 			continue
 		}
 		if response.StatusCode == http.StatusOK {
-			var newOrder storage.Order
+			var newOrder storage.OrderFromBlackBox
 			data, err := io.ReadAll(response.Body)
 			if err != nil {
 				fmt.Printf("Got error %s", err.Error())
@@ -166,15 +133,18 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 				continue
 			}
 			fmt.Printf("Got newOrder %v", newOrder)
-			newOrder.Number = order
-			strg.storage.UpdateOrders([]storage.Order{newOrder})
+			strg.storage.UpdateOrder(newOrder)
 			if newOrder.Status != "INVALID" && newOrder.Status != "PROCESSED" {
-				strg.ordersToProcess <- order
+				go func() {
+					strg.ordersToProcess <- orderNumber
+				}()
 			}
 			response.Body.Close()
 		} else {
-			fmt.Printf("Got bad status code %v for order %s", response.StatusCode, order)
-			strg.ordersToProcess <- order
+			fmt.Printf("Got bad status code %v for order %s", response.StatusCode, orderNumber)
+			go func() {
+				strg.ordersToProcess <- orderNumber
+			}()
 		}
 		time.Sleep(1 * time.Second)
 	}
@@ -183,7 +153,6 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 
 func (strg *HandlerWithStorage) Register(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	fmt.Println("ADDD")
 	jsonBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("Got err while reading body: %s", err.Error())
