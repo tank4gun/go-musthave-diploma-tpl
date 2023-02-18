@@ -167,6 +167,7 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 				continue
 			}
 			fmt.Printf("Got newOrder %v", newOrder)
+			newOrder.Number = order
 			strg.storage.UpdateOrders([]storage.Order{newOrder})
 			if newOrder.Status != "INVALID" && newOrder.Status != "PROCESSED" {
 				strg.ordersToProcess <- order
