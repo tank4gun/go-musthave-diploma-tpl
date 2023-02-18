@@ -166,7 +166,11 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 				fmt.Printf("Got error %s", err.Error())
 				continue
 			}
+			fmt.Printf("Got newOrder %v", newOrder)
 			strg.storage.UpdateOrders([]storage.Order{newOrder})
+			if newOrder.Status != "INVALID" && newOrder.Status != "PROCESSED" {
+				strg.ordersToProcess <- order
+			}
 		} else {
 			fmt.Printf("Got bad status code %v for order %s", response.StatusCode, order)
 			strg.ordersToProcess <- order
