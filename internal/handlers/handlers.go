@@ -115,6 +115,7 @@ func CheckAuth(next http.Handler) http.Handler {
 
 func (strg *HandlerWithStorage) GetStatusesDaemon() {
 	for order := range strg.ordersToProcess {
+		fmt.Printf("Got order %s to process", order)
 		//orders, _ := strg.storage.GetOrdersInProgress()
 		////if errCode != http.StatusOK {
 		////
