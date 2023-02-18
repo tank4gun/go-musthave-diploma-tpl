@@ -30,6 +30,12 @@ type OrderFromDB struct {
 	UploadedAt time.Time
 }
 
+type OrderFromBlackBox struct {
+	Order   string  `json:"number"`
+	Status  string  `json:"status"`
+	Accrual float64 `json:"accrual,omitempty"`
+}
+
 type UserBalance struct {
 	Orders    float64 `json:"current"`
 	Withdrawn float64 `json:"withdrawn"`
@@ -59,7 +65,7 @@ type Storage interface {
 	AddWithdrawalForUser(userID string, withdrawal Withdrawal) int
 	GetWithdrawalsForUser(userID string) ([]Withdrawal, int)
 	GetOrdersInProgress() ([]Order, int)
-	UpdateOrders([]Order) int
+	UpdateOrder(order OrderFromBlackBox) int
 }
 
 type DBStorage struct {
@@ -289,7 +295,7 @@ func (strg *DBStorage) GetOrdersInProgress() ([]Order, int) {
 	return orders, http.StatusOK
 }
 
-func (strg *DBStorage) UpdateOrders(orders []Order) int {
+func (strg *DBStorage) UpdateOrder(order OrderFromBlackBox) int {
 	tx, err := strg.db.Begin()
 	if err != nil {
 		fmt.Printf("Got error %s", err.Error())
@@ -300,20 +306,13 @@ func (strg *DBStorage) UpdateOrders(orders []Order) int {
 		fmt.Printf("Got error %s", err.Error())
 		return http.StatusInternalServerError
 	}
-	//UserURLstmt, err := tx.Prepare("INSERT INTO user_url (user_id, url_id) VALUES ($1, $2)")
-	//if err != nil {
-	//	return err
-	//}
 	defer URLstmt.Close()
-	//defer UserURLstmt.Close()
-	for _, order := range orders {
-		if _, err := URLstmt.Exec(order.Status, order.Accrual, order.Number); err != nil {
-			if err = tx.Rollback(); err != nil {
-				log.Fatalf("Insert to url, need rollback, %v", err)
-				return http.StatusInternalServerError
-			}
+	if _, err := URLstmt.Exec(order.Status, order.Accrual, order.Order); err != nil {
+		if err = tx.Rollback(); err != nil {
+			log.Fatalf("Insert to url, need rollback, %v", err)
 			return http.StatusInternalServerError
 		}
+		return http.StatusInternalServerError
 	}
 	if err := tx.Commit(); err != nil {
 		log.Fatalf("Unable to commit: %v", err)
