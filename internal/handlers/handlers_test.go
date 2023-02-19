@@ -80,9 +80,8 @@ func TestRegisterHandler(t *testing.T) {
 		name                string
 		want                wantResponse
 		registerData        storage.UserAuthData
-		mockResponseId      string
+		mockResponseID      string
 		mockResponseErrCode int
-		//mockError    int
 	}{
 		{
 			"success_register",
@@ -137,9 +136,9 @@ func TestRegisterHandler(t *testing.T) {
 				for _, cookie := range cookies {
 					if cookie.Name == UserCookie {
 						h := hmac.New(sha256.New, CookieKey)
-						h.Write([]byte(tc.mockResponseId))
+						h.Write([]byte(tc.mockResponseID))
 						sign := h.Sum(nil)
-						assert.Equal(t, hex.EncodeToString(append([]byte(tc.mockResponseId)[:], sign[:]...)), cookie.Value)
+						assert.Equal(t, hex.EncodeToString(append([]byte(tc.mockResponseID)[:], sign[:]...)), cookie.Value)
 						break
 					}
 					assert.Fail(t, "Got no cookies for UserID")
