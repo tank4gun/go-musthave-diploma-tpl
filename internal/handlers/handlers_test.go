@@ -125,7 +125,7 @@ func TestRegisterHandler(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			storage := mocks.NewMockStorage(ctrl)
-			storage.EXPECT().Register(tc.registerData).Return(tc.mockResponseId, tc.mockResponseErrCode)
+			storage.EXPECT().Register(tc.registerData).Return(tc.mockResponseID, tc.mockResponseErrCode)
 			handler := http.HandlerFunc(GetHandlerWithStorage(storage).Register)
 			handler.ServeHTTP(w, request)
 			result := w.Result()
