@@ -136,9 +136,9 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 			newOrder.Order = orderNumber
 			strg.storage.UpdateOrder(newOrder)
 			if newOrder.Status != "INVALID" && newOrder.Status != "PROCESSED" {
-				go func() {
+				go func(orderNumber string) {
 					strg.ordersToProcess <- orderNumber
-				}()
+				}(orderNumber)
 			}
 			response.Body.Close()
 		} else {
@@ -147,9 +147,9 @@ func (strg *HandlerWithStorage) GetStatusesDaemon() {
 				time.Sleep(1 * time.Second)
 			}
 			log.Printf("Got bad status code %v for order %s", response.StatusCode, orderNumber)
-			go func() {
+			go func(orderNumber string) {
 				strg.ordersToProcess <- orderNumber
-			}()
+			}(orderNumber)
 		}
 	}
 	close(strg.ordersToProcess)
@@ -247,9 +247,9 @@ func (strg *HandlerWithStorage) AddOrder(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if errCode == http.StatusAccepted {
-		go func() {
-			strg.ordersToProcess <- string(data)
-		}()
+		go func(orderNum string) {
+			strg.ordersToProcess <- orderNum
+		}(string(data))
 	}
 	w.WriteHeader(errCode)
 	w.Write(make([]byte, 0))
