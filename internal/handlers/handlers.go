@@ -247,8 +247,8 @@ func (strg *HandlerWithStorage) AddOrder(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if errCode == http.StatusAccepted {
-		go func(orderNum string) {
-			strg.ordersToProcess <- orderNum
+		go func(orderNumber string) {
+			strg.ordersToProcess <- orderNumber
 		}(string(data))
 	}
 	w.WriteHeader(errCode)
